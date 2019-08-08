@@ -1,4 +1,6 @@
 language: php
+services:
+  - redis-server
 
 php:
   - 7.2
@@ -9,6 +11,9 @@ matrix:
   allow_failures:
     - php: nightly
   fast_finish: true
+
+before_install:
+  - echo "extension = redis.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 install:
   - composer install -n
