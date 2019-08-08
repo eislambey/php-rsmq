@@ -1,0 +1,27 @@
+{
+  "name": "islambey/rsmq",
+  "description": "Redis Simple Message Queue.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "emre can islambey",
+      "email": "eislambey@gmail.com"
+    }
+  ],
+  "require": {
+    "ext-redis": "*",
+    "ext-mbstring": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Islambey\\RSMQ\\": "src/"
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^8.3"
+  },
+  "scripts": {
+    "test": "phpunit"
+  }
+}

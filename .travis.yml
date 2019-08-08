@@ -1,0 +1,24 @@
+language: php
+
+php:
+  - 7.2
+  - 7.3
+  - nightly
+
+matrix:
+  allow_failures:
+    - php: nightly
+  fast_finish: true
+
+install:
+  - composer install -n
+
+script:
+  - composer test -- --coverage-clover=clover.xml
+
+cache:
+  directories:
+    - $HOME/.composer/cache/files
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
