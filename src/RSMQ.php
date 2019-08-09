@@ -165,6 +165,8 @@ class RSMQ
         }
 
         $transaction->exec();
+
+        return $this->getQueueAttributes($queue);
     }
 
     public function sendMessage(string $queue, string $message, array $options = []): string
