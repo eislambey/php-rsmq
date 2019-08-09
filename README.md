@@ -290,3 +290,6 @@ if($rsmq->changeMessageVisibility($queue, $id, 60)) {
 	echo "Message hidden for 60 secs";
 }
 ```
+
+## LICENSE
+The MIT LICENSE. See [LICENSE](./LICENSE)
