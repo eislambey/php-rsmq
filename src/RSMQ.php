@@ -80,8 +80,7 @@ class RSMQ
             throw new Exception('Queue already exists.');
         }
 
-        $this->redis->sAdd("{$this->ns}QUEUES", $name);
-        return true;
+        return (bool)$this->redis->sAdd("{$this->ns}QUEUES", $name);
     }
 
     public function listQueues()
