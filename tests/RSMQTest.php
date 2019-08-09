@@ -262,6 +262,20 @@ class RSMQTest extends \PHPUnit\Framework\TestCase
 
     }
 
+    public function testSetQueueAttributes()
+    {
+        $queue = 'foo';
+        $vt = 100;
+        $delay = 10;
+        $maxsize = 2048;
+        $this->rsmq->createQueue($queue);
+        $attrs = $this->rsmq->setQueueAttributes($queue, $vt, $delay, $maxsize);
+
+        $this->assertSame($vt, $attrs['vt']);
+        $this->assertSame($delay, $attrs['delay']);
+        $this->assertSame($maxsize, $attrs['maxsize']);
+    }
+
     public function invokeMethod(&$object, $methodName, array $parameters = array())
     {
         $reflection = new \ReflectionClass(get_class($object));
