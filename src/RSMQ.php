@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Islambey\RSMQ;
 
@@ -56,7 +57,7 @@ class RSMQ
         $this->initScripts();
     }
 
-    public function createQueue(string $name, int $vt = 30, int $delay = 0, int $maxSize = 65536)
+    public function createQueue(string $name, int $vt = 30, int $delay = 0, int $maxSize = 65536): bool
     {
         $this->validate([
             'queue' => $name,
@@ -105,7 +106,7 @@ class RSMQ
         }
     }
 
-    public function getQueueAttributes(string $queue)
+    public function getQueueAttributes(string $queue): array
     {
         $this->validate([
             'queue' => $queue,
@@ -139,7 +140,7 @@ class RSMQ
         return $attributes;
     }
 
-    public function setQueueAttributes(string $queue, int $vt = null, int $delay = null, int $maxSize = null)
+    public function setQueueAttributes(string $queue, int $vt = null, int $delay = null, int $maxSize = null): array
     {
         $this->validate([
             'vt' => $vt,
@@ -229,7 +230,7 @@ class RSMQ
         ];
     }
 
-    public function popMessage(string $queue)
+    public function popMessage(string $queue): array
     {
         $this->validate([
             'queue' => $queue,
@@ -254,7 +255,7 @@ class RSMQ
         ];
     }
 
-    public function deleteMessage(string $queue, string $id)
+    public function deleteMessage(string $queue, string $id): bool
     {
         $this->validate([
             'queue' => $queue,
@@ -270,7 +271,7 @@ class RSMQ
         return $resp[0] === 1 && $resp[1] > 0;
     }
 
-    public function changeMessageVisibility(string $queue, string $id, int $vt)
+    public function changeMessageVisibility(string $queue, string $id, int $vt): bool
     {
         $this->validate([
             'queue' => $queue,
@@ -290,7 +291,7 @@ class RSMQ
         return (bool)$resp;
     }
 
-    private function getQueue(string $name, bool $uid = false)
+    private function getQueue(string $name, bool $uid = false): array
     {
         $this->validate([
             'queue' => $name,
@@ -323,7 +324,7 @@ class RSMQ
         return $queue;
     }
 
-    private function initScripts()
+    private function initScripts(): void
     {
         $receiveMessageScript = 'local msg = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", KEYS[2], "LIMIT", "0", "1")
 			if #msg == 0 then
