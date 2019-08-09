@@ -180,7 +180,7 @@ class RSMQ
         $delay = $options['delay'] ?? $q['delay'];
 
         if ($q['maxsize'] !== -1 && mb_strlen($message) > $q['maxsize']) {
-            throw new \Exception('Message too long');
+            throw new Exception('Message too long');
         }
 
         $key = "{$this->ns}$queue";
@@ -303,7 +303,7 @@ class RSMQ
             ->exec();
 
         if ($resp[0]['vt'] === false) {
-            throw new \Exception('Queue not found.');
+            throw new Exception('Queue not found.');
         }
 
         $ms = $this->util->formatZeroPad((int)$resp[1][1], 6);
