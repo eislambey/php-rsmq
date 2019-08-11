@@ -22,9 +22,9 @@ class UtilTest extends TestCase
     }
 
     /**
-     * @param $expected
-     * @param $num
-     * @param $count
+     * @param string $expected
+     * @param int $num
+     * @param int $count
      * @dataProvider providerFormatZeroPad
      */
     public function testFormatZeroPad($expected, $num, $count)

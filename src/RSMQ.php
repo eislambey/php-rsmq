@@ -69,13 +69,13 @@ class RSMQ
         $key = "{$this->ns}$name:Q";
 
         $resp = $this->redis->time();
-        $resp = $this->redis->multi()
-            ->hSetNx($key, 'vt', $vt)
-            ->hSetNx($key, 'delay', $delay)
-            ->hSetNx($key, 'maxsize', $maxSize)
-            ->hSetNx($key, 'created', $resp[0])
-            ->hSetNx($key, 'modified', $resp[0])
-            ->exec();
+        $transaction = $this->redis->multi();
+        $transaction->hSetNx($key, 'vt', (string)$vt);
+        $transaction->hSetNx($key, 'delay', (string)$delay);
+        $transaction->hSetNx($key, 'maxsize', (string)$maxSize);
+        $transaction->hSetNx($key, 'created', $resp[0]);
+        $transaction->hSetNx($key, 'modified', $resp[0]);
+        $resp = $transaction->exec();
 
         if (!$resp[0]) {
             throw new Exception('Queue already exists.');
@@ -96,10 +96,10 @@ class RSMQ
         ]);
 
         $key = "{$this->ns}$name";
-        $resp = $this->redis->multi()
-            ->del("$key:Q", $key)
-            ->srem("{$this->ns}QUEUES", $name)
-            ->exec();
+        $transaction = $this->redis->multi();
+        $transaction->del("$key:Q", $key);
+        $transaction->srem("{$this->ns}QUEUES", $name);
+        $resp = $transaction->exec();
 
         if (!$resp[0]) {
             throw new Exception('Queue not found.');
@@ -115,11 +115,11 @@ class RSMQ
         $key = "{$this->ns}$queue";
         $resp = $this->redis->time();
 
-        $resp = $this->redis->multi()
-            ->hMGet("$key:Q", ['vt', 'delay', 'maxsize', 'totalrecv', 'totalsent', 'created', 'modified'])
-            ->zCard($key)
-            ->zCount($key, $resp[0] . '0000', "+inf")
-            ->exec();
+        $transaction = $this->redis->multi();
+        $transaction->hMGet("$key:Q", ['vt', 'delay', 'maxsize', 'totalrecv', 'totalsent', 'created', 'modified']);
+        $transaction->zCard($key);
+        $transaction->zCount($key, $resp[0] . '0000', "+inf");
+        $resp = $transaction->exec();
 
         if ($resp[0]['vt'] === false) {
             throw new Exception('Queue not found.');
@@ -154,15 +154,15 @@ class RSMQ
 
         $transaction->hSet("{$this->ns}$queue:Q", 'modified', $time[0]);
         if ($vt !== null) {
-            $transaction->hSet("{$this->ns}$queue:Q", 'vt', $vt);
+            $transaction->hSet("{$this->ns}$queue:Q", 'vt', (string)$vt);
         }
 
         if ($delay !== null) {
-            $transaction->hSet("{$this->ns}$queue:Q", 'delay', $delay);
+            $transaction->hSet("{$this->ns}$queue:Q", 'delay', (string)$delay);
         }
 
         if ($maxSize !== null) {
-            $transaction->hSet("{$this->ns}$queue:Q", 'maxsize', $maxSize);
+            $transaction->hSet("{$this->ns}$queue:Q", 'maxsize', (string)$maxSize);
         }
 
         $transaction->exec();
@@ -185,10 +185,10 @@ class RSMQ
 
         $key = "{$this->ns}$queue";
 
-        $transaction = $this->redis->multi()
-            ->zadd($key, $q['ts'] + $delay * 1000, $q['uid'])
-            ->hset("$key:Q", $q['uid'], $message)
-            ->hincrby("$key:Q", 'totalsent', 1);
+        $transaction = $this->redis->multi();
+        $transaction->zadd($key, $q['ts'] + $delay * 1000, $q['uid']);
+        $transaction->hset("$key:Q", $q['uid'], $message);
+        $transaction->hincrby("$key:Q", 'totalsent', 1);
 
         if ($this->realtime) {
             $transaction->zCard($key);
@@ -263,10 +263,10 @@ class RSMQ
         ]);
 
         $key = "{$this->ns}$queue";
-        $resp = $this->redis->multi()
-            ->zRem($key, $id)
-            ->hDel("$key:Q", $id, "$id:rc", "$id:fr")
-            ->exec();
+        $transaction = $this->redis->multi();
+        $transaction->zRem($key, $id);
+        $transaction->hDel("$key:Q", $id, "$id:rc", "$id:fr");
+        $resp = $transaction->exec();
 
         return $resp[0] === 1 && $resp[1] > 0;
     }
@@ -297,10 +297,10 @@ class RSMQ
             'queue' => $name,
         ]);
 
-        $resp = $this->redis->multi()
-            ->hmget("{$this->ns}$name:Q", ['vt', 'delay', 'maxsize'])
-            ->time()
-            ->exec();
+        $transaction = $this->redis->multi();
+        $transaction->hmget("{$this->ns}$name:Q", ['vt', 'delay', 'maxsize']);
+        $transaction->time();
+        $resp = $transaction->exec();
 
         if ($resp[0]['vt'] === false) {
             throw new Exception('Queue not found.');
@@ -318,7 +318,7 @@ class RSMQ
 
         if ($uid) {
             $uid = $this->util->makeID(22);
-            $queue['uid'] = base_convert((int)($resp[1][0] . $ms), 10, 36) . $uid;
+            $queue['uid'] = base_convert(($resp[1][0] . $ms), 10, 36) . $uid;
         }
 
         return $queue;

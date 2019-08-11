@@ -18,7 +18,8 @@ class Util
 
     public function formatZeroPad(int $num, int $count): string
     {
-        return substr(pow(10, $count) + $num, 1);
+        $numStr = (string) (pow(10, $count) + $num);
+        return substr($numStr, 1);
     }
 
 }
