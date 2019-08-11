@@ -19,6 +19,7 @@ install:
   - composer install -n
 
 script:
+  - composer analyse
   - composer test -- --coverage-clover=clover.xml
 
 cache:
