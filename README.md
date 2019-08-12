@@ -7,7 +7,7 @@ A lightweight message queue for PHP that requires no dedicated queue server. Jus
 PHP implementation of [smrchy/rsmq](https://github.com/smrchy/rsmq)
 
 ## Installation
-	composer require islambey/rsmq
+	composer require eislambey/rsmq
 
 ## Methods
 

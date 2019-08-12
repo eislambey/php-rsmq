@@ -1,5 +1,5 @@
 {
-  "name": "islambey/rsmq",
+  "name": "eislambey/rsmq",
   "description": "Redis Simple Message Queue.",
   "type": "library",
   "license": "MIT",
