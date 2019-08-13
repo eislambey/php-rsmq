@@ -394,7 +394,7 @@ class RSMQ
 
         if (isset($params['maxsize']) &&
             ($params['maxsize'] < self::MIN_MESSAGE_SIZE || $params['maxsize'] > self::MAX_PAYLOAD_SIZE)) {
-            $message = "Maximum message size must be beetweeb %d and %d";
+            $message = "Maximum message size must be between %d and %d";
             throw new Exception(sprintf($message, self::MIN_MESSAGE_SIZE, self::MAX_PAYLOAD_SIZE));
         }
     }
