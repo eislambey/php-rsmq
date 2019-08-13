@@ -392,10 +392,10 @@ class RSMQ
             throw new Exception('Delay must be between 0 and ' . self::MAX_DELAY);
         }
 
-        if (isset($params['maxsize']) && ($params['maxsize'] < self::MIN_MESSAGE_SIZE || $params['maxsize'] > self::MAX_PAYLOAD_SIZE)) {
-            throw new Exception('Maximum message size must be between ' . self::MIN_MESSAGE_SIZE . ' and ' . self::MAX_PAYLOAD_SIZE);
+        if (isset($params['maxsize']) &&
+            ($params['maxsize'] < self::MIN_MESSAGE_SIZE || $params['maxsize'] > self::MAX_PAYLOAD_SIZE)) {
+            $message = "Maximum message size must be beetweeb %d and %d";
+            throw new Exception(sprintf($message, self::MIN_MESSAGE_SIZE, self::MAX_PAYLOAD_SIZE));
         }
-
-
     }
 }

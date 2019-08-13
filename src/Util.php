@@ -21,5 +21,4 @@ class Util
         $numStr = (string) (pow(10, $count) + $num);
         return substr($numStr, 1);
     }
-
 }
