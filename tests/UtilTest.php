@@ -15,7 +15,7 @@ class UtilTest extends TestCase
         $this->util = new Util();
     }
 
-    public function testMakeID()
+    public function testMakeID(): void
     {
         $size = 20;
         $this->assertSame($size, strlen($this->util->makeID($size)));
@@ -27,12 +27,15 @@ class UtilTest extends TestCase
      * @param int $count
      * @dataProvider providerFormatZeroPad
      */
-    public function testFormatZeroPad($expected, $num, $count)
+    public function testFormatZeroPad($expected, $num, $count): void
     {
         $this->assertSame($expected, $this->util->formatZeroPad($num, $count));
     }
 
-    public function providerFormatZeroPad()
+    /**
+     * @return array<int, array>
+     */
+    public function providerFormatZeroPad(): array
     {
         return [
             ['01', 1, 2],

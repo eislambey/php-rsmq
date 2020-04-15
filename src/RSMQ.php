@@ -84,7 +84,10 @@ class RSMQ
         return (bool)$this->redis->sAdd("{$this->ns}QUEUES", $name);
     }
 
-    public function listQueues()
+    /**
+     * @return array<string>
+     */
+    public function listQueues(): array
     {
         return $this->redis->sMembers("{$this->ns}QUEUES");
     }
@@ -106,6 +109,11 @@ class RSMQ
         }
     }
 
+    /**
+     * @param string $queue
+     * @return array<string, mixed>
+     * @throws Exception
+     */
     public function getQueueAttributes(string $queue): array
     {
         $this->validate([
@@ -140,6 +148,14 @@ class RSMQ
         return $attributes;
     }
 
+    /**
+     * @param string $queue
+     * @param int|null $vt
+     * @param int|null $delay
+     * @param int|null $maxSize
+     * @return array<string, mixed>
+     * @throws Exception
+     */
     public function setQueueAttributes(string $queue, int $vt = null, int $delay = null, int $maxSize = null): array
     {
         $this->validate([
@@ -170,6 +186,13 @@ class RSMQ
         return $this->getQueueAttributes($queue);
     }
 
+    /**
+     * @param string $queue
+     * @param string $message
+     * @param array<string, mixed> $options
+     * @return string
+     * @throws Exception
+     */
     public function sendMessage(string $queue, string $message, array $options = []): string
     {
         $this->validate([
@@ -203,6 +226,12 @@ class RSMQ
         return $q['uid'];
     }
 
+    /**
+     * @param string $queue
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     * @throws Exception
+     */
     public function receiveMessage(string $queue, array $options = []): array
     {
         $this->validate([
@@ -230,6 +259,11 @@ class RSMQ
         ];
     }
 
+    /**
+     * @param string $queue
+     * @return array<string, mixed>
+     * @throws Exception
+     */
     public function popMessage(string $queue): array
     {
         $this->validate([
@@ -291,6 +325,12 @@ class RSMQ
         return (bool)$resp;
     }
 
+    /**
+     * @param string $name
+     * @param bool $uid
+     * @return array<string, mixed>
+     * @throws Exception
+     */
     private function getQueue(string $name, bool $uid = false): array
     {
         $this->validate([
@@ -374,6 +414,10 @@ class RSMQ
         $this->changeMessageVisibilitySha1 = $this->redis->script('load', $changeMessageVisibilityScript);
     }
 
+    /**
+     * @param array<string, mixed> $params
+     * @throws Exception
+     */
     public function validate(array $params): void
     {
         if (isset($params['queue']) && !preg_match('/^([a-zA-Z0-9_-]){1,160}$/', $params['queue'])) {
