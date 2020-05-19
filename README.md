@@ -23,6 +23,8 @@ Parameters:
 Example:
 
 ```php
+<?php
+
 $redis = new Redis();
 $redis->connect('127.0.0.1', 6379);
 $rsmq = new \Islambey\RSMQ\RSMQ($redis);
@@ -50,6 +52,8 @@ Throws:
 Example:
 
 ```php
+<?php
+
 $rsmq->createQueue('myqueue');
 ```
 
@@ -63,6 +67,8 @@ Returns an array:
 Example:
 
 ```php
+<?php
+
 $queues = $rsmq->listQueues();
 ```
 
@@ -85,6 +91,8 @@ Throws:
 Example:
 
 ```php
+<?php
+
 $rsmq->deleteQueue('myqueue');
 ```
 
@@ -110,6 +118,8 @@ Returns an associative array:
 Example:
 
 ```php
+<?php
+
 $attributes =  $rsmq->getQueueAttributes('myqueue');
 echo "visibility timeout: ", $attributes['vt'], "\n";
 echo "delay for new messages: ", $attributes['delay'], "\n";
@@ -153,6 +163,8 @@ Throws:
 Example:
 
 ```php
+<?php
+
 $queue = 'myqueue';
 $vt = 50;
 $delay = 10;
@@ -181,6 +193,8 @@ Throws:
 Example:
 
 ```php
+<?php
+
 $id = $rsmq->sendMessage('myqueue', 'a message');
 echo "Message Sent. ID: ", $id;
 ```
@@ -209,6 +223,8 @@ Throws:
 Example:
 
 ```php
+<?php
+
 $message = $rsmq->receiveMessage('myqueue');
 echo "Message ID: ", $message['id'];
 echo "Message: ", $message['message'];
@@ -230,6 +246,8 @@ Throws:
 Example:
 
 ```php
+<?php
+
 $id = $rsmq->sendMessage('queue', 'a message');
 $rsmq->deleteMessage($id);
 ```
@@ -259,6 +277,8 @@ Throws:
 Example:
 
 ```php
+<?php
+
 $message = $rsmq->popMessage('myqueue');
 echo "Message ID: ", $message['id'];
 echo "Message: ", $message['message'];
@@ -284,6 +304,8 @@ Throws:
 Example:
 
 ```php
+<?php
+
 $queue = 'myqueue';
 $id = $rsmq->sendMessage($queue, 'a message');
 if($rsmq->changeMessageVisibility($queue, $id, 60)) {
