@@ -14,6 +14,10 @@ class RSMQTest extends \PHPUnit\Framework\TestCase
         $redis = new Redis();
         $redis->connect('127.0.0.1', 6379);
         $this->rsmq = new RSMQ($redis);
+
+//        $nodes = ['127.0.0.1:7001', '127.0.0.1:7002', '127.0.0.1:7003'];
+//        $redis = new RedisCluster(null, $nodes);
+//        $this->rsmq = new RSMQ($redis);
     }
 
     public function testScriptsShouldInitialized(): void

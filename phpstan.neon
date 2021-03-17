@@ -5,3 +5,7 @@ parameters:
         - tests
 
     reportUnmatchedIgnoredErrors: false
+
+    ignoreErrors:
+        # Reported: https://github.com/phpredis/phpredis/issues/1952
+        - '#Method RedisCluster::time\(\) invoked with 1 parameter, 0 required.#'

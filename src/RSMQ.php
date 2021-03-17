@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Islambey\RSMQ;
 
 use Redis;
+use RedisCluster;
 
 class RSMQ
 {
@@ -12,7 +13,7 @@ class RSMQ
     const MAX_PAYLOAD_SIZE = 65536;
 
     /**
-     * @var Redis
+     * @var RedisCluster|Redis
      */
     private $redis;
 
@@ -46,10 +47,15 @@ class RSMQ
      */
     private $changeMessageVisibilitySha1;
 
-    public function __construct(Redis $redis, string $ns = 'rsmq', bool $realtime = false)
+    /**
+     * @param Redis|RedisCluster $redis    When minimum is PHP8, write the union type in the constructor.
+     * @param string             $ns       Hash tags will be added automatically for RedisCluster.
+     * @param bool               $realtime
+     */
+    public function __construct($redis, string $ns = 'rsmq', bool $realtime = false)
     {
         $this->redis = $redis;
-        $this->ns = "$ns:";
+        $this->ns = $this->redis instanceof RedisCluster ? sprintf("{%s}:", $ns) : "$ns:";
         $this->realtime = $realtime;
 
         $this->util = new Util();
@@ -68,7 +74,12 @@ class RSMQ
 
         $key = "{$this->ns}$name:Q";
 
-        $resp = $this->redis->time();
+        if ($this->redis instanceof RedisCluster) {
+            $masters = $this->redis->_masters();
+            $resp    = $this->redis->time($masters[0]);
+        } else {
+            $resp = $this->redis->time();
+        }
         $transaction = $this->redis->multi();
         $transaction->hSetNx($key, 'vt', (string)$vt);
         $transaction->hSetNx($key, 'delay', (string)$delay);
@@ -121,12 +132,18 @@ class RSMQ
         ]);
 
         $key = "{$this->ns}$queue";
-        $resp = $this->redis->time();
+
+        if ($this->redis instanceof RedisCluster) {
+            $masters = $this->redis->_masters();
+            $time = $this->redis->time($masters[0]);
+        } else {
+            $time = $this->redis->time();
+        }
 
         $transaction = $this->redis->multi();
         $transaction->hMGet("$key:Q", ['vt', 'delay', 'maxsize', 'totalrecv', 'totalsent', 'created', 'modified']);
         $transaction->zCard($key);
-        $transaction->zCount($key, $resp[0] . '0000', "+inf");
+        $transaction->zCount($key, $time[0] . '0000', "+inf");
         $resp = $transaction->exec();
 
         if ($resp[0]['vt'] === false) {
@@ -165,20 +182,27 @@ class RSMQ
         ]);
         $this->getQueue($queue);
 
-        $time = $this->redis->time();
-        $transaction = $this->redis->multi();
+        if ($this->redis instanceof RedisCluster) {
+            $masters = $this->redis->_masters();
+            $time    = $this->redis->time($masters[0]);
+        } else {
+            $time = $this->redis->time();
+        }
 
-        $transaction->hSet("{$this->ns}$queue:Q", 'modified', $time[0]);
+        $key = "{$this->ns}$queue";
+
+        $transaction = $this->redis->multi();
+        $transaction->hSet("$key:Q", 'modified', $time[0]);
         if ($vt !== null) {
-            $transaction->hSet("{$this->ns}$queue:Q", 'vt', (string)$vt);
+            $transaction->hSet("$key:Q", 'vt', (string)$vt);
         }
 
         if ($delay !== null) {
-            $transaction->hSet("{$this->ns}$queue:Q", 'delay', (string)$delay);
+            $transaction->hSet("$key:Q", 'delay', (string)$delay);
         }
 
         if ($maxSize !== null) {
-            $transaction->hSet("{$this->ns}$queue:Q", 'maxsize', (string)$maxSize);
+            $transaction->hSet("$key:Q", 'maxsize', (string)$maxSize);
         }
 
         $transaction->exec();
@@ -246,7 +270,7 @@ class RSMQ
             $q['ts'],
             $q['ts'] + $vt * 1000
         ];
-        $resp = $this->redis->evalSha($this->receiveMessageSha1, $args, 3);
+        $resp = $this->redis->evalSha($this->receiveMessageSha1, $args, 1);
         if (empty($resp)) {
             return [];
         }
@@ -276,7 +300,7 @@ class RSMQ
             "{$this->ns}$queue",
             $q['ts'],
         ];
-        $resp = $this->redis->evalSha($this->popMessageSha1, $args, 2);
+        $resp = $this->redis->evalSha($this->popMessageSha1, $args, 1);
         if (empty($resp)) {
             return [];
         }
@@ -320,7 +344,7 @@ class RSMQ
             $id,
             $q['ts'] + $vt * 1000
         ];
-        $resp = $this->redis->evalSha($this->changeMessageVisibilitySha1, $params, 3);
+        $resp = $this->redis->evalSha($this->changeMessageVisibilitySha1, $params, 1);
 
         return (bool)$resp;
     }
@@ -337,28 +361,34 @@ class RSMQ
             'queue' => $name,
         ]);
 
+        if ($this->redis instanceof RedisCluster) {
+            $masters = $this->redis->_masters();
+            $time = $this->redis->time($masters[0]);
+        } else {
+            $time = $this->redis->time();
+        }
         $transaction = $this->redis->multi();
         $transaction->hmget("{$this->ns}$name:Q", ['vt', 'delay', 'maxsize']);
-        $transaction->time();
+
         $resp = $transaction->exec();
 
         if ($resp[0]['vt'] === false) {
             throw new Exception('Queue not found.');
         }
 
-        $ms = $this->util->formatZeroPad((int)$resp[1][1], 6);
+        $ms = $this->util->formatZeroPad((int)$time[1], 6);
 
 
         $queue = [
             'vt' => (int)$resp[0]['vt'],
             'delay' => (int)$resp[0]['delay'],
             'maxsize' => (int)$resp[0]['maxsize'],
-            'ts' => (int)($resp[1][0] . substr($ms, 0, 3)),
+            'ts' => (int)($time[0] . substr($ms, 0, 3)),
         ];
 
         if ($uid) {
             $uid = $this->util->makeID(22);
-            $queue['uid'] = base_convert(($resp[1][0] . $ms), 10, 36) . $uid;
+            $queue['uid'] = base_convert(($time[0] . $ms), 10, 36) . $uid;
         }
 
         return $queue;
@@ -366,25 +396,25 @@ class RSMQ
 
     private function initScripts(): void
     {
-        $receiveMessageScript = 'local msg = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", KEYS[2], "LIMIT", "0", "1")
+        $receiveMessageScript = 'local msg = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1], "LIMIT", "0", "1")
 			if #msg == 0 then
 				return {}
 			end
-			redis.call("ZADD", KEYS[1], KEYS[3], msg[1])
+			redis.call("ZADD", KEYS[1], ARGV[2], msg[1])
 			redis.call("HINCRBY", KEYS[1] .. ":Q", "totalrecv", 1)
 			local mbody = redis.call("HGET", KEYS[1] .. ":Q", msg[1])
 			local rc = redis.call("HINCRBY", KEYS[1] .. ":Q", msg[1] .. ":rc", 1)
 			local o = {msg[1], mbody, rc}
 			if rc==1 then
-				redis.call("HSET", KEYS[1] .. ":Q", msg[1] .. ":fr", KEYS[2])
-				table.insert(o, KEYS[2])
+				redis.call("HSET", KEYS[1] .. ":Q", msg[1] .. ":fr", ARGV[1])
+				table.insert(o, ARGV[1])
 			else
 				local fr = redis.call("HGET", KEYS[1] .. ":Q", msg[1] .. ":fr")
 				table.insert(o, fr)
 			end
 			return o';
 
-        $popMessageScript = 'local msg = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", KEYS[2], "LIMIT", "0", "1")
+        $popMessageScript = 'local msg = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1], "LIMIT", "0", "1")
 			if #msg == 0 then
 				return {}
 			end
@@ -393,7 +423,7 @@ class RSMQ
 			local rc = redis.call("HINCRBY", KEYS[1] .. ":Q", msg[1] .. ":rc", 1)
 			local o = {msg[1], mbody, rc}
 			if rc==1 then
-				table.insert(o, KEYS[2])
+				table.insert(o, ARGV[1])
 			else
 				local fr = redis.call("HGET", KEYS[1] .. ":Q", msg[1] .. ":fr")
 				table.insert(o, fr)
@@ -402,16 +432,25 @@ class RSMQ
 			redis.call("HDEL", KEYS[1] .. ":Q", msg[1], msg[1] .. ":rc", msg[1] .. ":fr")
 			return o';
 
-        $changeMessageVisibilityScript = 'local msg = redis.call("ZSCORE", KEYS[1], KEYS[2])
+        $changeMessageVisibilityScript = 'local msg = redis.call("ZSCORE", KEYS[1], ARGV[1])
 			if not msg then
 				return 0
 			end
-			redis.call("ZADD", KEYS[1], KEYS[3], KEYS[2])
+			redis.call("ZADD", KEYS[1], ARGV[2], ARGV[1])
 			return 1';
 
-        $this->receiveMessageSha1 = $this->redis->script('load', $receiveMessageScript);
-        $this->popMessageSha1 = $this->redis->script('load', $popMessageScript);
-        $this->changeMessageVisibilitySha1 = $this->redis->script('load', $changeMessageVisibilityScript);
+        if ($this->redis instanceof RedisCluster) {
+            $masters = $this->redis->_masters();
+            foreach ($masters as $master) {
+                $this->receiveMessageSha1          = $this->redis->script($master, 'load', $receiveMessageScript);
+                $this->popMessageSha1              = $this->redis->script($master, 'load', $popMessageScript);
+                $this->changeMessageVisibilitySha1 = $this->redis->script($master, 'load', $changeMessageVisibilityScript);
+            }
+        } else {
+            $this->receiveMessageSha1          = $this->redis->script('load', $receiveMessageScript);
+            $this->popMessageSha1              = $this->redis->script('load', $popMessageScript);
+            $this->changeMessageVisibilitySha1 = $this->redis->script('load', $changeMessageVisibilityScript);
+        }
     }
 
     /**

@@ -16,7 +16,7 @@ Creates a new instance of RSMQ.
 
 Parameters:
 
-* `$redis` (Redis): *required The Redis instance
+* `$redis` (Redis|RedisCluster): *required The Redis instance
 * `$ns` (string): *optional (Default: "rsmq")* The namespace prefix used for all keys created by RSMQ
 * `$realtime` (Boolean): *optional (Default: false)* Enable realtime PUBLISH of new messages
 
