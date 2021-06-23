@@ -442,4 +442,25 @@ class RSMQ
             throw new Exception(sprintf($message, self::MIN_MESSAGE_SIZE, self::MAX_PAYLOAD_SIZE));
         }
     }
+    /**
+     * @var $queue name
+     * This was created to check if queue exist before creating another queue.
+     * This functions helps developers to first check if a queue already exist or not before creating a new one.
+     */
+    public function queueExist(string $name): bool
+    {
+        $this->validate([
+            'queue' => $name,
+        ]);
+
+        $transaction = $this->redis->multi();
+        $transaction->hmget("{$this->ns}$name:Q", ['vt', 'delay', 'maxsize']);
+        $transaction->time();
+        $resp = $transaction->exec();
+        if($resp[0]['vt'] === false){
+            return false;
+        }
+        //Create Queue
+        return true;
+    }
 }
